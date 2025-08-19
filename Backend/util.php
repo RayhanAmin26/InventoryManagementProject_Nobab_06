@@ -1,20 +1,20 @@
 <?php
+function respond($data, $status=200) {
+    http_response_code($status);
+    echo json_encode($data);
+    exit;
+}
+
 function read_json_body() {
-  $raw = file_get_contents('php://input');
-  $data = json_decode($raw, true);
-  return is_array($data) ? $data : [];
+    $input = file_get_contents("php://input");
+    return json_decode($input, true) ?? [];
 }
 
-function respond($data, int $code = 200) {
-  http_response_code($code);
-  echo json_encode($data, JSON_UNESCAPED_UNICODE);
-  exit;
-}
-
-function required($arr, $keys) {
-  foreach ($keys as $k) {
-    if (!isset($arr[$k]) || $arr[$k] === '') {
-      respond(['error' => "Missing field: $k"], 422);
+function required($arr, $fields) {
+    foreach ($fields as $f) {
+        if (!isset($arr[$f]) || $arr[$f] === "") {
+            respond(["error" => "Missing field: $f"], 400);
+        }
     }
-  }
 }
+?>

@@ -14,15 +14,15 @@ if ($method === 'GET') {
 if ($method === 'POST') {
   $b = read_json_body();
   required($b, ['temperature','humidity','category','harvest_date','crop_name','quantity','storage','processing_unit']);
-  $stmt = $pdo->prepare("INSERT INTO harvested_crops (temperature,humidity,category,harvest_date,crop_name,quantity,storage,processing_unit) VALUES (?,?,?,?,?,?,?,?)");
+  $stmt = $pdo->prepare("INSERT INTO harvested_crops (temperature, humidity, category, harvest_date, crop_name, quantity, storage, processing_unit) VALUES (?,?,?,?,?,?,?,?)");
   $stmt->execute([$b['temperature'],$b['humidity'],$b['category'],$b['harvest_date'],$b['crop_name'],$b['quantity'],$b['storage'],$b['processing_unit']]);
-  respond(['message'=>'Harvested crop added']);
+  respond(['message' => 'Harvested crop added']);
 }
 
 if ($method === 'PUT') {
   if(!$id) respond(['error'=>'Missing id'],400);
   $b = read_json_body();
-  $stmt = $pdo->prepare("UPDATE harvested_crops SET temperature=?,humidity=?,category=?,harvest_date=?,crop_name=?,quantity=?,storage=?,processing_unit=? WHERE id=?");
+  $stmt = $pdo->prepare("UPDATE harvested_crops SET temperature=?, humidity=?, category=?, harvest_date=?, crop_name=?, quantity=?, storage=?, processing_unit=? WHERE id=?");
   $stmt->execute([$b['temperature'],$b['humidity'],$b['category'],$b['harvest_date'],$b['crop_name'],$b['quantity'],$b['storage'],$b['processing_unit'],$id]);
   respond(['message'=>'Harvested crop updated']);
 }

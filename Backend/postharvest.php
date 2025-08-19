@@ -1,35 +1,96 @@
 <?php
-require __DIR__ . '/cors.php';
-require __DIR__ . '/config.php';
-require __DIR__ . '/util.php';
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
+header("Content-Type: application/json; charset=UTF-8");
+
+// Database connection
+$host = "localhost";
+$user = "root";   // তোমার DB username বসাও
+$pass = "";       // তোমার DB password বসাও
+$dbname = "agri_inventory";
+
+$conn = new mysqli($host, $user, $pass, $dbname);
+if ($conn->connect_error) {
+    die(json_encode(["error" => "Database connection failed"]));
+}
+
+// Helper: parse input JSON
+function getInput() {
+    return json_decode(file_get_contents("php://input"), true);
+}
 
 $method = $_SERVER['REQUEST_METHOD'];
-$id = $_GET['id'] ?? null;
 
-if ($method === 'GET') {
-  $stmt = $pdo->query("SELECT * FROM postharvest ORDER BY id DESC");
-  respond($stmt->fetchAll());
+// ------------------- READ (GET) -------------------
+if ($method === "GET") {
+    $result = $conn->query("SELECT * FROM postharvest ORDER BY id DESC");
+    $rows = [];
+    while ($row = $result->fetch_assoc()) {
+        $rows[] = $row;
+    }
+    echo json_encode($rows);
 }
 
-if ($method === 'POST') {
-  $b = read_json_body();
-  required($b, ['product_name','category','batch_number','expiry_date','storage_condition','location','quantity','stock_status']);
-  $stmt = $pdo->prepare("INSERT INTO postharvest (product_name,category,batch_number,expiry_date,storage_condition,location,quantity,stock_status) VALUES (?,?,?,?,?,?,?,?)");
-  $stmt->execute([$b['product_name'],$b['category'],$b['batch_number'],$b['expiry_date'],$b['storage_condition'],$b['location'],$b['quantity'],$b['stock_status']]);
-  respond(['message'=>'Postharvest record added']);
+// ------------------- CREATE (POST) -------------------
+elseif ($method === "POST") {
+    $data = getInput();
+    $monitor_date = $data["monitor_date"] ?? null;
+    $temperature = $data["temperature"] ?? null;
+    $humidity = $data["humidity"] ?? null;
+    $notes = $data["notes"] ?? null;
+
+    $stmt = $conn->prepare("INSERT INTO postharvest (monitor_date, temperature, humidity, notes) VALUES (?, ?, ?, ?)");
+    $stmt->bind_param("ssss", $monitor_date, $temperature, $humidity, $notes);
+    if ($stmt->execute()) {
+        echo json_encode(["success" => true, "id" => $stmt->insert_id]);
+    } else {
+        echo json_encode(["error" => $stmt->error]);
+    }
 }
 
-if ($method === 'PUT') {
-  if(!$id) respond(['error'=>'Missing id'],400);
-  $b = read_json_body();
-  $stmt = $pdo->prepare("UPDATE postharvest SET product_name=?,category=?,batch_number=?,expiry_date=?,storage_condition=?,location=?,quantity=?,stock_status=? WHERE id=?");
-  $stmt->execute([$b['product_name'],$b['category'],$b['batch_number'],$b['expiry_date'],$b['storage_condition'],$b['location'],$b['quantity'],$b['stock_status'],$id]);
-  respond(['message'=>'Postharvest record updated']);
+// ------------------- UPDATE (PUT) -------------------
+elseif ($method === "PUT") {
+    if (!isset($_GET["id"])) {
+        echo json_encode(["error" => "Missing ID"]);
+        exit;
+    }
+    $id = intval($_GET["id"]);
+    $data = getInput();
+
+    $monitor_date = $data["monitor_date"] ?? null;
+    $temperature = $data["temperature"] ?? null;
+    $humidity = $data["humidity"] ?? null;
+    $notes = $data["notes"] ?? null;
+
+    $stmt = $conn->prepare("UPDATE postharvest SET monitor_date=?, temperature=?, humidity=?, notes=? WHERE id=?");
+    $stmt->bind_param("ssssi", $monitor_date, $temperature, $humidity, $notes, $id);
+    if ($stmt->execute()) {
+        echo json_encode(["success" => true]);
+    } else {
+        echo json_encode(["error" => $stmt->error]);
+    }
 }
 
-if ($method === 'DELETE') {
-  if(!$id) respond(['error'=>'Missing id'],400);
-  $stmt=$pdo->prepare("DELETE FROM postharvest WHERE id=?");
-  $stmt->execute([$id]);
-  respond(['message'=>'Deleted']);
+// ------------------- DELETE (DELETE) -------------------
+elseif ($method === "DELETE") {
+    if (!isset($_GET["id"])) {
+        echo json_encode(["error" => "Missing ID"]);
+        exit;
+    }
+    $id = intval($_GET["id"]);
+    $stmt = $conn->prepare("DELETE FROM postharvest WHERE id=?");
+    $stmt->bind_param("i", $id);
+    if ($stmt->execute()) {
+        echo json_encode(["success" => true]);
+    } else {
+        echo json_encode(["error" => $stmt->error]);
+    }
 }
+
+// ------------------- OPTIONS -------------------
+elseif ($method === "OPTIONS") {
+    http_response_code(200);
+}
+
+$conn->close();

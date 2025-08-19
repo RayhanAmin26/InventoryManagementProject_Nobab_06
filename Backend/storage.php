@@ -13,18 +13,18 @@ if ($method === 'GET') {
 
 if ($method === 'POST') {
   $b = read_json_body();
-  required($b, ['location','temperature','humidity']);
-  $stmt = $pdo->prepare("INSERT INTO storage_conditions (location,temperature,humidity) VALUES (?,?,?)");
-  $stmt->execute([$b['location'],$b['temperature'],$b['humidity']]);
-  respond(['message'=>'Storage record added']);
+  required($b, ['condition_name','temperature','humidity','description']);
+  $stmt = $pdo->prepare("INSERT INTO storage_conditions (condition_name, temperature, humidity, description) VALUES (?,?,?,?)");
+  $stmt->execute([$b['condition_name'],$b['temperature'],$b['humidity'],$b['description']]);
+  respond(['message' => 'Storage condition added']);
 }
 
 if ($method === 'PUT') {
   if(!$id) respond(['error'=>'Missing id'],400);
   $b = read_json_body();
-  $stmt = $pdo->prepare("UPDATE storage_conditions SET location=?,temperature=?,humidity=? WHERE id=?");
-  $stmt->execute([$b['location'],$b['temperature'],$b['humidity'],$id]);
-  respond(['message'=>'Storage record updated']);
+  $stmt = $pdo->prepare("UPDATE storage_conditions SET condition_name=?, temperature=?, humidity=?, description=? WHERE id=?");
+  $stmt->execute([$b['condition_name'],$b['temperature'],$b['humidity'],$b['description'],$id]);
+  respond(['message'=>'Storage condition updated']);
 }
 
 if ($method === 'DELETE') {

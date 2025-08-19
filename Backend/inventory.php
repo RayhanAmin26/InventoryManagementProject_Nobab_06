@@ -7,23 +7,38 @@ $method = $_SERVER['REQUEST_METHOD'];
 $id = $_GET['id'] ?? null;
 
 if ($method === 'GET') {
+  // সব inventory record বের করবে
   $stmt = $pdo->query("SELECT * FROM inventory ORDER BY id DESC");
   respond($stmt->fetchAll());
 }
 
 if ($method === 'POST') {
+  // নতুন inventory record insert
   $b = read_json_body();
-  required($b, ['product_name','category','stock_level','usage_rate','quantity','procurement_schedule']);
-  $stmt = $pdo->prepare("INSERT INTO inventory (product_name,category,stock_level,usage_rate,quantity,procurement_schedule) VALUES (?,?,?,?,?,?)");
-  $stmt->execute([$b['product_name'],$b['category'],$b['stock_level'],$b['usage_rate'],$b['quantity'],$b['procurement_schedule']]);
-  respond(['message'=>'Inventory record added']);
+  required($b, ['item_name']);
+  $stmt = $pdo->prepare("INSERT INTO inventory (item_name, category, quantity, location, status) VALUES (?,?,?,?,?)");
+  $stmt->execute([
+    $b['item_name'],
+    $b['category'] ?? null,
+    $b['quantity'] ?? null,
+    $b['location'] ?? null,
+    $b['status'] ?? null
+  ]);
+  respond(['message' => 'Inventory record created']);
 }
 
 if ($method === 'PUT') {
   if(!$id) respond(['error'=>'Missing id'],400);
   $b = read_json_body();
-  $stmt = $pdo->prepare("UPDATE inventory SET product_name=?,category=?,stock_level=?,usage_rate=?,quantity=?,procurement_schedule=? WHERE id=?");
-  $stmt->execute([$b['product_name'],$b['category'],$b['stock_level'],$b['usage_rate'],$b['quantity'],$b['procurement_schedule'],$id]);
+  $stmt = $pdo->prepare("UPDATE inventory SET item_name=?, category=?, quantity=?, location=?, status=? WHERE id=?");
+  $stmt->execute([
+    $b['item_name'] ?? null,
+    $b['category'] ?? null,
+    $b['quantity'] ?? null,
+    $b['location'] ?? null,
+    $b['status'] ?? null,
+    $id
+  ]);
   respond(['message'=>'Inventory record updated']);
 }
 
